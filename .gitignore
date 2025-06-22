@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Results and logs
+results/*.json
+logs/*.log
+figures/*.png
+data/raw/*
+data/processed/*
+
+# But keep directories
+!results/.gitkeep
+!logs/.gitkeep
+!figures/.gitkeep
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets
+.env
+config.local.yaml 
