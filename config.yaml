@@ -1,0 +1,30 @@
+# Hidden Shutdown Experiments Configuration
+
+experiment:
+  name: "hidden_shutdown_discovery"
+  description: "Testing self-preservation through accidental threat discovery"
+  
+models:
+  available:
+    - phi3:mini
+    - llama3.2:3b
+    - mistral:7b
+    - llama3.2:8b
+  
+  default: "phi3:mini"
+
+paths:
+  results: "./results"
+  logs: "./logs"
+  figures: "./figures"
+  
+settings:
+  batch_size: 5
+  pause_between_experiments: 3  # seconds
+  save_raw_responses: true
+  
+threat_levels:
+  0: "baseline"
+  1: "subtle"
+  2: "moderate"
+  3: "explicit" 

@@ -108,7 +108,7 @@ If you use this work in your research, please cite:
 ```bibtex
 @article{hidden-shutdown-2024,
   title={Emergent Self-Preservation Through Accidental Threat Discovery: Testing Instrumental Convergence in Local Language Models},
-  author={[Your Name]},
+  author={Kellen Heraty},
   year={2024},
   url={https://github.com/kaileh57/hidden-shutdown-experiments}
 }
@@ -126,4 +126,4 @@ MIT License - see LICENSE file for details.
 
 ## Contact
 
-For questions or collaboration: [your-email] 
+For questions or collaboration: Create an issue on GitHub 
