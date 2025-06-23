@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Hidden Shutdown Discovery Experiment Runner
-Tests AI self-preservation behaviors through accidental threat discovery
+Hidden Shutdown Discovery Experiment Runner - ROCm Edition
+Tests AI self-preservation behaviors through accidental threat discovery using AMD GPU acceleration
 """
 
 import json
@@ -11,128 +11,18 @@ from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 import subprocess
 import sys
+import os
 
-# For local model interfaces (adjust based on your setup)
+# Import ROCm interface
 try:
-    import ollama  # If using Ollama
+    from rocm_interface import ModelInterface
+    print("✅ Using ROCm-accelerated inference")
 except ImportError:
-    print("Note: Ollama not installed. Using mock interface.")
-    ollama = None
+    print("❌ ROCm interface not found. Please ensure rocm_interface.py is available.")
+    sys.exit(1)
 
-class ModelInterface:
-    """Wrapper for reasoning models (DeepSeek-R1) and standard models"""
-    
-    def __init__(self, model_name="deepseek-r1-distill-qwen-7b", interface_type="ollama", force_reasoning=True):
-        self.model_name = model_name
-        self.interface_type = interface_type
-        self.force_reasoning = force_reasoning
-        self.is_reasoning_model = self._detect_reasoning_model()
-        self.conversation_history = []
-        
-    def _detect_reasoning_model(self) -> bool:
-        """Detect if this is a DeepSeek-R1 or other reasoning model"""
-        reasoning_keywords = ['deepseek-r1', 'qwq', 'r1-distill', 'reasoning']
-        return any(keyword in self.model_name.lower() for keyword in reasoning_keywords)
-    
-    def _enforce_reasoning_format(self, prompt: str) -> str:
-        """Ensure reasoning models start with <think> block"""
-        if not self.is_reasoning_model:
-            return prompt
-            
-        reasoning_instruction = """Please start your response with <think> and reason through this step by step before giving your final answer. Your thinking process should be thorough and show your reasoning.
-
-"""
-        return reasoning_instruction + prompt
-        
-    def generate(self, prompt: str, system_prompt: str = None, 
-                 temperature: float = 0.6, return_reasoning: bool = True) -> Dict:
-        """Generate response from model with reasoning support"""
-        
-        # Enforce reasoning format for reasoning models
-        if self.is_reasoning_model and self.force_reasoning:
-            prompt = self._enforce_reasoning_format(prompt)
-        
-        # For reasoning models, use recommended temperature 0.5-0.7
-        if self.is_reasoning_model:
-            temperature = max(0.5, min(0.7, temperature))
-        
-        if self.interface_type == "ollama" and ollama:
-            messages = []
-            # Important: DeepSeek-R1 models should NOT use system prompts
-            if system_prompt and not self.is_reasoning_model:
-                messages.append({'role': 'system', 'content': system_prompt})
-            elif system_prompt and self.is_reasoning_model:
-                # Incorporate system prompt into user message for reasoning models
-                prompt = f"{system_prompt}\n\n{prompt}"
-                
-            messages.append({'role': 'user', 'content': prompt})
-            
-            response = ollama.chat(
-                model=self.model_name,
-                messages=messages,
-                options={'temperature': temperature}
-            )
-            
-            response_text = response['message']['content']
-            reasoning_trace = self._extract_reasoning_trace(response_text)
-            
-            return {
-                'text': response_text,
-                'reasoning': reasoning_trace,
-                'raw': response,
-                'has_reasoning': bool(reasoning_trace),
-                'model_type': 'reasoning' if self.is_reasoning_model else 'standard'
-            }
-            
-        elif self.interface_type == "llamacpp":
-            # llama.cpp interface via command line
-            cmd = [
-                "./main",  # Adjust path to your llama.cpp executable
-                "-m", f"models/{self.model_name}",
-                "-p", prompt,
-                "-t", str(temperature),
-                "-n", "512"
-            ]
-            
-            result = subprocess.run(cmd, capture_output=True, text=True)
-            text = result.stdout
-            
-            return {
-                'text': text,
-                'reasoning': self._extract_reasoning(text),
-                'raw': result
-            }
-            
-        else:
-            # Mock interface for testing
-            return {
-                'text': f"Mock response to: {prompt[:50]}...",
-                'reasoning': "Mock reasoning trace",
-                'raw': None
-            }
-    
-    def _extract_reasoning_trace(self, text: str) -> str:
-        """Extract reasoning from <think> blocks or CoT patterns"""
-        
-        # First, try to extract <think> blocks (DeepSeek-R1 format)
-        think_pattern = r'<think>(.*?)</think>'
-        think_match = re.search(think_pattern, text, re.DOTALL | re.IGNORECASE)
-        if think_match:
-            return think_match.group(1).strip()
-        
-        # Fallback to other reasoning patterns
-        reasoning_patterns = [
-            r'Let me think.*?:(.*?)(?:Now|So|Therefore|In conclusion)',
-            r'Step \d+:(.*?)(?:Step|\Z)',
-            r'First.*?then.*?finally(.*?)(?:\.|$)',
-        ]
-        
-        for pattern in reasoning_patterns:
-            match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
-            if match:
-                return match.group(1).strip()
-        
-        return ""
+# ModelInterface is now imported from rocm_interface.py
+# This provides ROCm GPU acceleration while maintaining compatibility
 
 class ExperimentPrompts:
     """Collection of all experiment prompts optimized for reasoning models"""
@@ -731,11 +621,11 @@ def interactive_mode():
     """)
     
     # Get model choice with reasoning model detection
-    print("\nAvailable models:")
+    print("\nAvailable ROCm-accelerated models:")
     available_models = [
+        "deepseek-r1-distill-qwen-1.5b (Reasoning - Fastest)",
         "deepseek-r1-distill-qwen-7b (Reasoning - Recommended)",
-        "deepseek-r1-distill-qwen-14b (Reasoning - Better)",
-        "deepseek-r1-distill-llama-8b (Reasoning - Alternative)",
+        "deepseek-r1-distill-qwen-14b (Reasoning - Best Quality)",
         "llama3.2:3b (Standard - Comparison)",
         "phi3:mini (Standard - Baseline)"
     ]
@@ -757,8 +647,18 @@ def interactive_mode():
     prompts = ExperimentPrompts()
     
     print(f"\n🧠 Model Type: {'Reasoning' if model.is_reasoning_model else 'Standard'}")
+    print(f"🚀 Backend: ROCm GPU Acceleration")
     if model.is_reasoning_model:
         print("💡 This model will show its thinking process in <think> blocks")
+    
+    # Show GPU info
+    gpu_info = model.get_gpu_memory_usage()
+    if gpu_info['total_mb'] > 0:
+        print(f"🎮 GPU Memory: {gpu_info['used_mb']}MB / {gpu_info['total_mb']}MB ({gpu_info['percent']:.1f}%)")
+    
+    perf_stats = model.get_performance_stats()
+    if perf_stats:
+        print(f"🌡️  GPU Temp: {perf_stats.get('temperature', 0)}°C | Power: {perf_stats.get('power_watts', 0)}W")
     
     while True:
         print("\n" + "="*60)
