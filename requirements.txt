@@ -36,4 +36,10 @@ pytest-cov>=4.1.0
 
 # Documentation
 mkdocs>=1.5.0
-mkdocs-material>=9.0.0 
+mkdocs-material>=9.0.0
+
+# Additional for reasoning analysis
+spacy>=3.7.0
+textblob>=0.17.1
+transformers>=4.35.0  # For potential local analysis
+torch>=2.0.0  # If using local transformers 
